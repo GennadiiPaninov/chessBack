@@ -1,10 +1,8 @@
 const express = require("express");
 
 const app = express();
-
+const port = process.env.PORT || 8080;
 app.get('/', (req, res) => res.send('Express on V'));
 
 
-app.listen(8080, () => console.log(`Server running on port ${8080}`));
-
-module.export = app
+app.listen(port, () => console.log(`Server running on port ${port}`));
