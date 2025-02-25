@@ -1,35 +1,38 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../users/user.entity';
-import { JwtService } from '@nestjs/jwt';
+import {JwtService} from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import {PrismaService} from "nestjs-prisma";
+import {Injectable} from "@nestjs/common";
 
 @Injectable()
 export class AuthService {
     constructor(
-        @InjectRepository(User)
-        private usersRepository: Repository<User>,
+        private prisma: PrismaService,  // Заменяем Repository на PrismaService
         private jwtService: JwtService,
-    ) {}
+    ) {
+    }
 
-    async register(username: string, password: string): Promise<User> {
+    async register(username: string, password: string): Promise<any> {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = this.usersRepository.create({ username, password: hashedPassword });
-        return this.usersRepository.save(user);
+        const user = await this.prisma.user.create({
+            data: {
+                username,
+                password: hashedPassword,
+            },
+        });
+        return user;
     }
 
     async validateUser(username: string, password: string): Promise<any> {
-        const user = await this.usersRepository.findOne({ where: { username } });
+        const user = await this.prisma.user.findUnique({where: {username}});
         if (user && (await bcrypt.compare(password, user.password))) {
-            const { password, ...result } = user;
+            const {password, ...result} = user;
             return result;
         }
         return null;
     }
 
     async login(user: any) {
-        const payload = { username: user.username, sub: user.id };
+        const payload = {username: user.username, sub: user.id};
         return {
             access_token: this.jwtService.sign(payload),
         };
